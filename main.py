@@ -26,8 +26,8 @@ if __name__ == '__main__':
     random.seed(a=None, version=2)
     priestor = []
     # Return a k length list of unique elements chosen from the population sequence or set. Used for random sampling without replacement.
-    x = random.sample(range(-5000, 5000), k=20)
-    y = random.sample(range(-5000, 5000), k=20)
+    x = random.sample(range(-5000, 5000), k=3)
+    y = random.sample(range(-5000, 5000), k=3)
     for i, j in zip(x, y):
         priestor.append((i, j))
 
@@ -43,17 +43,17 @@ if __name__ == '__main__':
         nove_y = priestor[random_bod][1] + y_offset
         priestor.append((nove_x, nove_y))
 
-    k = 12
+    k = 3
 
     # 20 pociatocnych nahodnych centroidov
     # hocijaký bod v intervale od -5000 +5000 !
     # pricom ked robime s medoidom, tak je stred jeden z danych bodov
-    #centroids = []
-    #x = random.sample(range(-5000, 5000), k=k)
-    #y = random.sample(range(-5000, 5000), k=k)
-    #for i, j in zip(x, y):
-        #centroids.append((i, j))
-    centroids = random.sample(priestor, k=k)
+    centroids = []
+    x = random.sample(range(-5000, 5000), k=k)
+    y = random.sample(range(-5000, 5000), k=k)
+    for i, j in zip(x, y):
+        centroids.append((i, j))
+    #centroids = random.sample(priestor, k=k)
     vzdialenosti = []
 
     for c in priestor:
