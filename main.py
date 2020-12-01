@@ -16,6 +16,11 @@ def najdi_naj_centroid(distance):
     mini = min(distance.keys(), key=(lambda k: distance[k]))
     return mini
 
+#Krok 1: Priradenie inštancií do klastrov – pre každú inštanciu sa nájde najbližšie
+#centrum a do klastra prislúchajúceho tomuto centru sa inštancia priradí.
+
+#Krok 2: Úprava centier – nové centrá sa vypočítajú ako priemery inštancií
+#patriacich príslušnému klastru.
 
 if __name__ == '__main__':
     random.seed(a=None, version=2)
@@ -38,26 +43,52 @@ if __name__ == '__main__':
         nove_y = priestor[random_bod][1] + y_offset
         priestor.append((nove_x, nove_y))
 
-    k = 20
+    k = 10
 
     # 20 pociatocnych nahodnych centroidov
-    centroids = random.sample(priestor, k=k)
+    # hocijaký bod v intervale od -5000 +5000 !
+    # pricom ked robime s medoidom, tak je stred jeden z danych bodov
+    centroids = []
+    x = random.sample(range(-5000, 5000), k=k)
+    y = random.sample(range(-5000, 5000), k=k)
+    for i, j in zip(x, y):
+        centroids.append((i, j))
+    #centroids = random.sample(priestor, k=k)
     vzdialenosti = []
-    klastre = defaultdict(list)
-    for point in priestor:
-        distance = {}
-        index_c = 0
-        for c in centroids:
-            # vyratame vzdialenost bodu od kazdeho centroidu
-            distance[index_c] = vzdialenost(point, c)
-            index_c += 1
-        # vrati index centroidu, ktoru mal najmensiu vzdialost od toho bodu
-        vysledny = najdi_naj_centroid(distance)
-        # dictionary, kde key je klaster a values su body, ktore boli vyhodnotene ako najblizsie
-        klastre[vysledny].append(point)
+    for i in centroids:
+        ax2.plot(i[0], i[1], 'ro')
+
+    for i in range(0, 10):
+        klastre = defaultdict(list)
+        for point in priestor:
+            distance = {}
+            index_c = 0
+            for c in centroids:
+                # vyratame vzdialenost bodu od kazdeho centroidu
+                distance[index_c] = vzdialenost(point, c)
+                index_c += 1
+            # vrati index centroidu, ktoru mal najmensiu vzdialost od toho bodu
+            vysledny = najdi_naj_centroid(distance)
+            # dictionary, kde key je klaster a values su body, ktore boli vyhodnotene ako najblizsie k tomu centroidu
+            klastre[vysledny].append(point)
+            # prepisat centroidy - suradnica bude priemer - suma / pocet bodov v klastri
+        #print(klastre)
+        for i in range(0, len(klastre)):
+            x = 0
+            y = 0
+            #print(len(klastre[i]))
+            for j in range(0, len(klastre[i])):
+                x += klastre[i][j][0]
+                y += klastre[i][j][1]
+            if len(klastre[i]) == 0:
+                continue
+            x /= len(klastre[i])
+            y /= len(klastre[i])
+            centroids[i] = (x, y)
+    #print(centroids)
 
     colors = ['palegreen', 'gold', 'royalblue', 'darkorchid', 'orange', 'lightcoral', 'maroon', 'darkgoldenrod',
-              'forestgreen', 'g', 'mediumturquoise', 'c', 'skyblue', 'slateblue', 'pink', 'teal', 'tomato', 'crimson',
+              'forestgreen', 'g', 'mediumturquoise', 'c', 'skyblue', 'slateblue', 'pink', 'teal', 'tomato', 'brown',
               'purple', 'dodgerblue'
               ]
     for k in range(0, k):
