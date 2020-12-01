@@ -43,22 +43,30 @@ if __name__ == '__main__':
         nove_y = priestor[random_bod][1] + y_offset
         priestor.append((nove_x, nove_y))
 
-    k = 10
+    k = 12
 
     # 20 pociatocnych nahodnych centroidov
     # hocijaký bod v intervale od -5000 +5000 !
     # pricom ked robime s medoidom, tak je stred jeden z danych bodov
-    centroids = []
-    x = random.sample(range(-5000, 5000), k=k)
-    y = random.sample(range(-5000, 5000), k=k)
-    for i, j in zip(x, y):
-        centroids.append((i, j))
-    #centroids = random.sample(priestor, k=k)
+    #centroids = []
+    #x = random.sample(range(-5000, 5000), k=k)
+    #y = random.sample(range(-5000, 5000), k=k)
+    #for i, j in zip(x, y):
+        #centroids.append((i, j))
+    centroids = random.sample(priestor, k=k)
     vzdialenosti = []
+
+    for c in priestor:
+        ax2.plot(c[0], c[1], 'o', color='gray',
+                 markersize=5, linewidth=1,
+                 markerfacecolor='white',
+                 markeredgecolor='gray',
+                 markeredgewidth=1)
+
     for i in centroids:
         ax2.plot(i[0], i[1], 'ro')
 
-    for i in range(0, 10):
+    for i in range(0, 20):
         klastre = defaultdict(list)
         for point in priestor:
             distance = {}
@@ -88,19 +96,12 @@ if __name__ == '__main__':
     #print(centroids)
 
     colors = ['palegreen', 'gold', 'royalblue', 'darkorchid', 'orange', 'lightcoral', 'maroon', 'darkgoldenrod',
-              'forestgreen', 'g', 'mediumturquoise', 'c', 'skyblue', 'slateblue', 'pink', 'teal', 'tomato', 'brown',
+              'forestgreen', 'navajowhite', 'mediumturquoise', 'c', 'skyblue', 'slateblue', 'pink', 'teal', 'tomato', 'brown',
               'purple', 'dodgerblue'
               ]
     for k in range(0, k):
         for item in range(0, len(klastre[k])):
             ax1.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markeredgewidth=1)
-
-    for c in priestor:
-        ax2.plot(c[0], c[1], 'o', color='gray',
-                 markersize=5, linewidth=1,
-                 markerfacecolor='white',
-                 markeredgecolor='gray',
-                 markeredgewidth=1)
 
     for i in centroids:
         ax1.plot(i[0], i[1], 'ro')
