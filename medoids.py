@@ -39,6 +39,7 @@ def vytvor_klastre(priestor, medoids):
             klastre[vysledny].append(point)
     return klastre
 
+
 if __name__ == '__main__':
     random.seed(a=None, version=2)
     priestor = []
