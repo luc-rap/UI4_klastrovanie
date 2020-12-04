@@ -3,6 +3,9 @@ import random
 import math
 from collections import defaultdict
 import threading
+import numba
+from numba import jit
+from scipy.spatial import distance_matrix
 
 colors = ['palegreen', 'gold', 'royalblue', 'darkorchid', 'orange', 'lightcoral', 'maroon', 'darkgoldenrod',
           'forestgreen', 'navajowhite', 'mediumturquoise', 'c', 'skyblue', 'slateblue', 'pink', 'teal', 'tomato',
@@ -12,6 +15,7 @@ colors = ['palegreen', 'gold', 'royalblue', 'darkorchid', 'orange', 'lightcoral'
 
 
 # vypocita vzdialenost medzi jednym bodom a centroidom
+@jit(nopython=True)
 def vzdialenost(p1, p2):
     d = math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
     return d
@@ -87,13 +91,50 @@ def kmeans_centroid(k, priestor):
         ax1.plot(i[0], i[1], 'ro')
 
 
-def kmeans_medoid(k, priestor):
-    medoids = random.sample(priestor, k=k)
-    klastre = vytvor_klastre(priestor, medoids)
+# vypocita celkovu cenu vzdialenosti bodov v klastri od ich medoidov
+def cena(medoids, klastre):
+    cena = 0
+    for m in range(0, len(medoids)):
+        for bod in range(0, len(klastre[m])):
+            cena += vzdialenost(medoids[m], klastre[m][bod])
+    return cena
 
+
+def kmeans_medoid(k, priestor):
+    # pociatocne medoidy
+    medoids = random.sample(priestor, k=k)
+    # pociatocne klastre
+    klastre = vytvor_klastre(priestor, medoids)
+    # m_klastre =
+    # pociatocna cena
+    total_cost = cena(medoids, klastre)
+    for i in range(0, 5):
+        naj_medoidy = medoids
+        najnizsi_cost = total_cost
+        for m in range(0, len(medoids)):
+            for bod in priestor:
+                #print(total_cost)
+                if bod not in medoids:
+                    nove_medoidy = medoids.copy()
+                    nove_medoidy[m] = bod
+                    nove_klastre = vytvor_klastre(priestor, nove_medoidy)
+                    nova_cena = cena(nove_medoidy, nove_klastre)
+                    if nova_cena < najnizsi_cost:
+                        najnizsi_cost = nova_cena
+                        naj_medoidy = nove_medoidy
+                #print(total_cost)
+        # zapamataj si swap, ktory dal najnizsi cost
+        if najnizsi_cost < total_cost:
+            print(total_cost)
+            total_cost = najnizsi_cost
+            medoids = naj_medoidy
+        else:
+            break
+
+    nove_klastre = vytvor_klastre(priestor, medoids)
     for k in range(0, k):
-        for item in range(0, len(klastre[k])):
-            ax2.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=5,
+        for item in range(0, len(nove_klastre[k])):
+            ax2.plot(nove_klastre[k][item][0], nove_klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=5,
                      markeredgewidth=1)
     for i in medoids:
         ax2.plot(i[0], i[1], 'ro')
@@ -110,11 +151,6 @@ def vytvor_klastre(priestor, medoids):
         vysledny = najdi_min(distance)
         klastre[vysledny].append(point)
     return klastre
-
-
-def cena(klastre, medoids):
-    cena = 0
-    # for each cluster add distance between sample and medoid as cost
 
 
 if __name__ == '__main__':
@@ -136,7 +172,7 @@ if __name__ == '__main__':
     ax4 = fig.add_subplot(224)
     ax4.title.set_text('Divizivne zhklukovanie')
 
-    for i in range(0, 40000):
+    for i in range(0, 1000):
         random_bod = random.randint(0, len(priestor) - 1)
         x_offset = random.randint(-100, 100)
         y_offset = random.randint(-100, 100)
