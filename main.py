@@ -5,17 +5,14 @@ from collections import defaultdict
 import threading
 import heapq
 from numba import jit
-import numpy
-from scipy.spatial import distance
 
-colors = ['palegreen', 'gold', 'royalblue', 'darkorchid', 'orange', 'lightcoral', 'maroon', 'darkgoldenrod',
-          'forestgreen', 'navajowhite', 'mediumturquoise', 'c', 'skyblue', 'slateblue', 'pink', 'teal', 'tomato',
-          'brown',
-          'purple', 'dodgerblue'
+colors = ['crimson', 'coral', 'peachpuff', 'gold', 'orange', 'limegreen', 'darkgreen', 'deepskyblue', 'teal', 'navy', 'darkorchid', 'lightpink', 'deeppink',
+          'lightgrey', 'slategray', 'royalblue', 'lightcyan', 'purple', 'darkgoldenrod', 'mintcream'
           ]
 
 
 # vypocita vzdialenost medzi jednym bodom a centroidom
+@jit(nopython=True)
 def vzdialenost(p1, p2):
     d = math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
     return d
@@ -108,8 +105,6 @@ def cena(medoids, m, klastre):
 def kmeans_medoid(k, priestor):
     # pociatocne medoidy
     medoids = random.sample(priestor, k=k)
-    for i in medoids:
-        ax3.plot(i[0], i[1], 'ro')
     # pociatocne klastre
     #klastre = vytvor_klastre(priestor, medoids)
     # m_klastre =
@@ -191,7 +186,6 @@ def vytvor_klastre(priestor, medoids):
     return klastre
 
 
-
 def vzdialenost_centroid(klasterA, klasterB):
     if len(klasterA) == 1:
         centroidA = klasterA
@@ -244,7 +238,7 @@ def aglomer(k, priestor):
     for i in range(0, len(priestor)):
         klaster_list.append([priestor[i]])
     heap = setup(heap, klaster_list)
-    for i in range(0, k):
+    while len(klaster_list) > k:
         min_dist_klaster = heapq.heappop(heap)
         min_dist = min_dist_klaster[0]
         klasterA = min_dist_klaster[1][0]
@@ -270,7 +264,10 @@ def aglomer(k, priestor):
                 #bod2 = priestor[j]
     #p#rint(min_dist)
     #print(bod1, bod2)
-    print(klaster_list)
+    for k in range(0, len(klaster_list)):
+        for item in range(0, len(klaster_list[k])):
+            ax3.plot(klaster_list[k][item][0], klaster_list[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=6,
+                     markeredgewidth=1)
 
     # distance between clusters
     # merge clusters with minimal distance
@@ -280,8 +277,8 @@ if __name__ == '__main__':
     random.seed(a=None, version=2)
     priestor = []
     # Return a k length list of unique elements chosen from the population sequence or set. Used for random sampling without replacement.
-    x = random.sample(range(-5000, 5000), k=10)
-    y = random.sample(range(-5000, 5000), k=10)
+    x = random.sample(range(-5000, 5000), k=20)
+    y = random.sample(range(-5000, 5000), k=20)
     for i, j in zip(x, y):
         priestor.append((i, j))
 
@@ -295,7 +292,7 @@ if __name__ == '__main__':
     ax4 = fig.add_subplot(224)
     ax4.title.set_text('Divizivne zhklukovanie')
 
-    for i in range(0, 10):
+    for i in range(0, 7000):
         random_bod = random.randint(0, len(priestor) - 1)
         x_offset = random.randint(-100, 100)
         y_offset = random.randint(-100, 100)
@@ -303,15 +300,15 @@ if __name__ == '__main__':
         nove_y = priestor[random_bod][1] + y_offset
         priestor.append((nove_x, nove_y))
 
-    k = 10
-    thread1 = threading.Thread(target=kmeans_centroid, args=(k, priestor))
-    thread1.start()
-    thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
-    thread2.start()
+    k = 15
+    #thread1 = threading.Thread(target=kmeans_centroid, args=(k, priestor))
+    #thread1.start()
+    #thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
+    #thread2.start()
     thread3 = threading.Thread(target=aglomer, args=(k, priestor))
     thread3.start()
-    thread1.join()
-    thread2.join()
+    #thread1.join()
+    ##thread2.join()
     thread3.join()
     #kmeans_centroid(k, priestor)
     #kmeans_medoid(k, priestor)
