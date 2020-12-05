@@ -3,9 +3,10 @@ import random
 import math
 from collections import defaultdict
 import threading
-import numba
+import heapq
 from numba import jit
-from scipy.spatial import distance_matrix
+import numpy
+from scipy.spatial import distance
 
 colors = ['palegreen', 'gold', 'royalblue', 'darkorchid', 'orange', 'lightcoral', 'maroon', 'darkgoldenrod',
           'forestgreen', 'navajowhite', 'mediumturquoise', 'c', 'skyblue', 'slateblue', 'pink', 'teal', 'tomato',
@@ -15,7 +16,6 @@ colors = ['palegreen', 'gold', 'royalblue', 'darkorchid', 'orange', 'lightcoral'
 
 
 # vypocita vzdialenost medzi jednym bodom a centroidom
-@jit(nopython=True)
 def vzdialenost(p1, p2):
     d = math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
     return d
@@ -129,6 +129,7 @@ def kmeans_medoid(k, priestor):
                     nove_medoidy[m] = bod
                     # compute total cost of the configuration
                     cena_nova = cena(nove_medoidy, m, klastre)
+                    # ak sme nasli lepsiu konfiguraciu
                     if cena_nova < cena_klastra:
                         cena_klastra = cena_nova
                         # zapamataj si novy medoid
@@ -190,12 +191,97 @@ def vytvor_klastre(priestor, medoids):
     return klastre
 
 
+
+def vzdialenost_centroid(klasterA, klasterB):
+    if len(klasterA) == 1:
+        centroidA = klasterA
+    else:
+        x = 0
+        y = 0
+        for i in range(0, len(klasterA)):
+            x += klasterA[i][0]
+            y += klasterA[i][1]
+        x /= len(klasterA)
+        y /= len(klasterA)
+        centroidA = [(x, y)]
+
+    if len(klasterB) == 1:
+        centroidB = klasterB
+    else:
+        x = 0
+        y = 0
+        for i in range(0, len(klasterB)):
+            x += klasterB[i][0]
+            y += klasterB[i][1]
+        x /= len(klasterB)
+        y /= len(klasterB)
+        centroidB = [(x, y)]
+
+    d = math.sqrt((centroidA[0][0] - centroidB[0][0]) ** 2 + (centroidA[0][1] - centroidB[0][1]) ** 2)
+    return d
+
+
+def compute_distance(i, klaster_list, heap):
+    j = i + 1
+    klasterA = klaster_list[i]
+    for k in range(j, len(klaster_list)):
+        klasterB = klaster_list[k]
+        distance = vzdialenost_centroid(klasterA, klasterB)
+        heap_item = [distance, [klasterA, klasterB]]
+        heapq.heappush(heap, heap_item)
+    return heap
+
+
+def setup(heap, klaster_list):
+    for i in range(0, len(priestor)):
+        heap = compute_distance(i, klaster_list, heap)
+    return heap
+
+
+def aglomer(k, priestor):
+    heap = []
+    klaster_list = []
+    for i in range(0, len(priestor)):
+        klaster_list.append([priestor[i]])
+    heap = setup(heap, klaster_list)
+    for i in range(0, k):
+        min_dist_klaster = heapq.heappop(heap)
+        min_dist = min_dist_klaster[0]
+        klasterA = min_dist_klaster[1][0]
+        klasterB = min_dist_klaster[1][1]
+        if klasterA in klaster_list and klasterB in klaster_list:
+            klaster_list.remove(klasterA)
+            klaster_list.remove(klasterB)
+            klaster = klasterA + klasterB
+            klaster_list.insert(0, klaster)
+            heap = compute_distance(0, klaster_list, heap)
+
+
+    #matica = distance.cdist(priestor, priestor, metric='euclidean')
+    #min_dist = matica[0][1]
+    #bod1 = priestor[0]
+    #bod2 = priestor[1]
+    #for i in range(0, len(matica)):
+        #for j in range(0, len(matica)):
+            #print(matica[i][j])
+            #if (matica[i][j]) < min_dist and matica[i][j] != 0:
+                #min_dist = matica[i][j]
+                #bod1 = priestor[i]
+                #bod2 = priestor[j]
+    #p#rint(min_dist)
+    #print(bod1, bod2)
+    print(klaster_list)
+
+    # distance between clusters
+    # merge clusters with minimal distance
+
+
 if __name__ == '__main__':
     random.seed(a=None, version=2)
     priestor = []
     # Return a k length list of unique elements chosen from the population sequence or set. Used for random sampling without replacement.
-    x = random.sample(range(-5000, 5000), k=20)
-    y = random.sample(range(-5000, 5000), k=20)
+    x = random.sample(range(-5000, 5000), k=10)
+    y = random.sample(range(-5000, 5000), k=10)
     for i, j in zip(x, y):
         priestor.append((i, j))
 
@@ -209,7 +295,7 @@ if __name__ == '__main__':
     ax4 = fig.add_subplot(224)
     ax4.title.set_text('Divizivne zhklukovanie')
 
-    for i in range(0, 40000):
+    for i in range(0, 10):
         random_bod = random.randint(0, len(priestor) - 1)
         x_offset = random.randint(-100, 100)
         y_offset = random.randint(-100, 100)
@@ -222,11 +308,13 @@ if __name__ == '__main__':
     thread1.start()
     thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
     thread2.start()
+    thread3 = threading.Thread(target=aglomer, args=(k, priestor))
+    thread3.start()
     thread1.join()
     thread2.join()
+    thread3.join()
     #kmeans_centroid(k, priestor)
     #kmeans_medoid(k, priestor)
-    #aglomer()
     #diviz()
 
     plt.show()
