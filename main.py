@@ -18,8 +18,81 @@ def vzdialenost(p1, p2):
     return d
 
 
-def diviz(priestor, k):
-    pass
+def diviz(k, priestor):
+    k_list = []
+    x = 0
+    y = 0
+    centroids = []
+    for point in priestor:
+        x += point[0]
+        y += point[1]
+    x /= len(priestor)
+    y /= len(priestor)
+    max = -1
+    farthest = priestor[0][0]
+    for point in priestor:
+        d = vzdialenost(point, (x, y))
+        if d > max:
+            max = d
+            farthest = point
+
+    centroids.append((x,y))
+    centroids.append((farthest))
+    klastre = vytvor_klastre(priestor, centroids)
+    k_list.append(0)
+    k_list.append(1)
+    index_m = 2
+    while len(klastre) < k:
+        print(k)
+        print(len(klastre))
+        # find cluster with the largest diameter - maximum distance between two points
+        max_diam = 0
+        #max_klaster = klastre[0][0]
+        for klaster in klastre:
+            for i in range(0, len(klastre[klaster])):
+                for j in range(i+1, len(klastre[klaster])):
+                    d = vzdialenost(klastre[klaster][i], klastre[klaster][j])
+                    if d > max_diam:
+                        max_diam = d
+                        max_klaster = klaster
+        for i in range(0, len(klastre[max_klaster])):
+            x += klastre[max_klaster][i][0]
+            y += klastre[max_klaster][i][1]
+        x /= len(klastre[max_klaster])
+        y /= len(klastre[max_klaster])
+        max = -1
+        for point in range(0, len(klastre[max_klaster])):
+            d = vzdialenost(klastre[max_klaster][point], (x, y))
+            if d > max:
+                max = d
+                farthest = klastre[max_klaster][point]
+        centroids.append((x, y))
+        centroids.append((farthest))
+        #centroids = [(x, y), (farthest)]
+        #print(klastre[max_klaster])
+        for point in klastre[max_klaster]:
+            distance = {}
+            index_c = index_m
+            for c in range(index_m, len(centroids)):
+                distance[index_c] = vzdialenost(point, centroids[c])
+                index_c += 1
+            vysledny = najdi_min(distance)
+            klastre[vysledny].append(point)
+            if vysledny not in k_list:
+                k_list.append(vysledny)
+
+        klastre.pop(max_klaster)
+        k_list.remove(max_klaster)
+        index_m += 2
+    print(klastre)
+
+    for k, j in zip(range(0, k), k_list):
+        for item in range(0, len(klastre[j])):
+            ax4.plot(klastre[j][item][0], klastre[j][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=5,
+                     markeredgewidth=1)
+    #for i in centroids:
+        #ax4.plot(i[0], i[1], 'ro')
+
 
 
 # najde najblizsi centroid k danemu bodu
@@ -41,15 +114,6 @@ def kmeans_centroid(k, priestor):
     # centroids = random.sample(priestor, k=k)
     vzdialenosti = []
 
-   # for c in priestor:
-       # ax2.plot(c[0], c[1], 'o', color='gray',
-                # markersize=5, linewidth=1,
-                # markerfacecolor='white',
-                # markeredgecolor='gray',
-                # markeredgewidth=1)
-
-    #for i in centroids:
-        #ax2.plot(i[0], i[1], 'ro')
     # Krok 1: Priradenie inštancií do klastrov – pre každú inštanciu sa nájde najbližšie
     # centrum a do klastra prislúchajúceho tomuto centru sa inštancia priradí.
 
@@ -83,7 +147,6 @@ def kmeans_centroid(k, priestor):
             y /= len(klastre[i])
             centroids[i] = (x, y)
 
-    # print(centroids)
     for k in range(0, k):
         for item in range(0, len(klastre[k])):
             ax1.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=5,
@@ -94,7 +157,6 @@ def kmeans_centroid(k, priestor):
 
 def cena(medoids, m, klastre):
     cena = 0
-    #for m in range(0, len(medoids)):
     for bod in klastre[m]:
         cena += vzdialenost(medoids[m], bod)
     return cena
@@ -105,11 +167,6 @@ def cena(medoids, m, klastre):
 def kmeans_medoid(k, priestor):
     # pociatocne medoidy
     medoids = random.sample(priestor, k=k)
-    # pociatocne klastre
-    #klastre = vytvor_klastre(priestor, medoids)
-    # m_klastre =
-    # pociatocna cena
-    #total_cost = cena(medoids, klastre)
     while True:
         klastre = vytvor_klastre(priestor, medoids)
         naj_med = medoids
@@ -133,36 +190,6 @@ def kmeans_medoid(k, priestor):
             break
         else:
             medoids = naj_med
-
-
-
-            # select medoid -bod- with the lowest cost of the configuration
-
-
-    #for i in range(0, 5):
-        #naj_medoidy = medoids
-        #najnizsi_cost = total_cost
-        #for m in medoids:
-            #for bod in priestor:
-                #print(total_cost)
-                #if bod not in medoids:
-                    #nove_medoidy = medoids.copy()
-                    #print(nove_medoidy[m == medoids])
-                    #nove_medoidy[m == medoids] = bod
-
-                    #nove_klastre = vytvor_klastre(priestor, nove_medoidy)
-                    #nova_cena = cena(nove_medoidy, nove_klastre)
-                    #if nova_cena < najnizsi_cost:
-                        #najnizsi_cost = nova_cena
-                        #naj_medoidy = nove_medoidy
-                #print(total_cost)
-        # zapamataj si swap, ktory dal najnizsi cost
-        #if najnizsi_cost < total_cost:
-            #print(total_cost)
-            #total_cost = najnizsi_cost
-            #medoids = naj_medoidy
-        #else:
-            #break
 
     nove_klastre = vytvor_klastre(priestor, medoids)
     for k in range(0, k):
@@ -250,20 +277,6 @@ def aglomer(k, priestor):
             klaster_list.insert(0, klaster)
             heap = compute_distance(0, klaster_list, heap)
 
-
-    #matica = distance.cdist(priestor, priestor, metric='euclidean')
-    #min_dist = matica[0][1]
-    #bod1 = priestor[0]
-    #bod2 = priestor[1]
-    #for i in range(0, len(matica)):
-        #for j in range(0, len(matica)):
-            #print(matica[i][j])
-            #if (matica[i][j]) < min_dist and matica[i][j] != 0:
-                #min_dist = matica[i][j]
-                #bod1 = priestor[i]
-                #bod2 = priestor[j]
-    #p#rint(min_dist)
-    #print(bod1, bod2)
     for k in range(0, len(klaster_list)):
         for item in range(0, len(klaster_list[k])):
             ax3.plot(klaster_list[k][item][0], klaster_list[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=6,
@@ -292,7 +305,7 @@ if __name__ == '__main__':
     ax4 = fig.add_subplot(224)
     ax4.title.set_text('Divizivne zhklukovanie')
 
-    for i in range(0, 7000):
+    for i in range(0, 100):
         random_bod = random.randint(0, len(priestor) - 1)
         x_offset = random.randint(-100, 100)
         y_offset = random.randint(-100, 100)
@@ -301,17 +314,17 @@ if __name__ == '__main__':
         priestor.append((nove_x, nove_y))
 
     k = 15
-    #thread1 = threading.Thread(target=kmeans_centroid, args=(k, priestor))
-    #thread1.start()
-    #thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
-    #thread2.start()
+    thread1 = threading.Thread(target=kmeans_centroid, args=(k, priestor))
+    thread1.start()
+    thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
+    thread2.start()
     thread3 = threading.Thread(target=aglomer, args=(k, priestor))
     thread3.start()
-    #thread1.join()
-    ##thread2.join()
+    thread4 = threading.Thread(target=diviz, args=(k, priestor))
+    thread4.start()
+    thread1.join()
+    thread2.join()
     thread3.join()
-    #kmeans_centroid(k, priestor)
-    #kmeans_medoid(k, priestor)
-    #diviz()
+    thread4.join()
 
     plt.show()
