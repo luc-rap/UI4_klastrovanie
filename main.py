@@ -6,9 +6,11 @@ import threading
 import heapq
 from numba import jit
 
-colors = ['crimson', 'coral', 'peachpuff', 'gold', 'orange', 'limegreen', 'darkgreen', 'deepskyblue', 'teal', 'navy', 'darkorchid', 'lightpink', 'deeppink',
+colors = ['crimson', 'coral', 'peachpuff', 'gold', 'orange', 'limegreen', 'darkgreen', 'deepskyblue', 'teal', 'navy',
+          'darkorchid', 'lightpink', 'deeppink',
           'lightgrey', 'slategray', 'royalblue', 'lightcyan', 'purple', 'darkgoldenrod', 'mintcream'
           ]
+
 
 # vypocita euklidovsku vzdialenost medzi dvomi bodmi
 @jit(nopython=True)
@@ -39,8 +41,8 @@ def diviz(k, priestor):
             max = d
             farthest = point
     # na zaklade tychto dvoch bodov rozdelim priestor na dva prve klastre
-    centroids.append((x,y))
-    centroids.append((farthest))
+    centroids.append((x, y))
+    centroids.append(farthest)
     klastre = vytvor_klastre(priestor, centroids)
     k_list.append(0)
     k_list.append(1)
@@ -52,7 +54,7 @@ def diviz(k, priestor):
         max_klaster = 0
         for klaster in klastre:
             for i in range(0, len(klastre[klaster])):
-                for j in range(i+1, len(klastre[klaster])):
+                for j in range(i + 1, len(klastre[klaster])):
                     d = vzdialenost(klastre[klaster][i], klastre[klaster][j])
                     if d > max_diam:
                         max_diam = d
@@ -94,10 +96,11 @@ def diviz(k, priestor):
 
     for k, j in zip(range(0, k), k_list):
         for item in range(0, len(klastre[j])):
-            ax4.plot(klastre[j][item][0], klastre[j][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=5,
+            ax4.plot(klastre[j][item][0], klastre[j][item][1], 'o', color=colors[k], markeredgecolor='black',
+                     markersize=5,
                      markeredgewidth=1)
-    #for i in centroids:
-        #ax4.plot(i[0], i[1], 'ro')
+    # for i in centroids:
+    # ax4.plot(i[0], i[1], 'ro')
 
 
 # najde najblizsi centroid k danemu bodu
@@ -152,10 +155,11 @@ def kmeans_centroid(k, priestor):
 
     for k in range(0, k):
         for item in range(0, len(klastre[k])):
-            ax1.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=5,
+            ax1.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black',
+                     markersize=5,
                      markeredgewidth=1)
-    #for i in centroids:
-        #ax1.plot(i[0], i[1], 'ro')
+    # for i in centroids:
+    # ax1.plot(i[0], i[1], 'ro')
 
 
 # cena v ramci klastra
@@ -199,10 +203,11 @@ def kmeans_medoid(k, priestor):
     nove_klastre = vytvor_klastre(priestor, medoids)
     for k in range(0, k):
         for item in range(0, len(nove_klastre[k])):
-            ax2.plot(nove_klastre[k][item][0], nove_klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=6,
+            ax2.plot(nove_klastre[k][item][0], nove_klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black',
+                     markersize=6,
                      markeredgewidth=1)
-    #for i in medoids:
-        #ax2.plot(i[0], i[1], 'ro')
+    # for i in medoids:
+    # ax2.plot(i[0], i[1], 'ro')
 
 
 # priradi body k najblizsiemu centroidu/medoidu
@@ -269,7 +274,7 @@ def setup(heap, klaster_list):
     return heap
 
 
-# aglomerativne zhlukovanie hlada klastre, ktore su najblizsie
+# aglomerativne zhlukovanie hlada klastre, ktore su najblizsie, pouziva centroid/average link
 # tieto klastre naslednej zluci dokopy
 def aglomer(k, priestor):
     heap = []
@@ -283,7 +288,7 @@ def aglomer(k, priestor):
         min_dist = min_dist_klaster[0]
         klasterA = min_dist_klaster[1][0]
         klasterB = min_dist_klaster[1][1]
-        # ak tieto klastre existuju, v klaster liste, mozeme ich zlucit
+        # ak tieto klastre existuju ako samostatne klastre v klaster liste, mozeme ich zlucit
         if klasterA in klaster_list and klasterB in klaster_list:
             klaster_list.remove(klasterA)
             klaster_list.remove(klasterB)
@@ -293,7 +298,8 @@ def aglomer(k, priestor):
 
     for k in range(0, len(klaster_list)):
         for item in range(0, len(klaster_list[k])):
-            ax3.plot(klaster_list[k][item][0], klaster_list[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=6,
+            ax3.plot(klaster_list[k][item][0], klaster_list[k][item][1], 'o', color=colors[k], markeredgecolor='black',
+                     markersize=6,
                      markeredgewidth=1)
 
     # distance between clusters
@@ -301,7 +307,7 @@ def aglomer(k, priestor):
 
 
 if __name__ == '__main__':
-    #random.seed(a=None, version=2)
+    # random.seed(a=None, version=2)
     priestor = []
     # Return a k length list of unique elements chosen from the population sequence or set. Used for random sampling without replacement.
     x = random.sample(range(-2000, 2000), k=20)
