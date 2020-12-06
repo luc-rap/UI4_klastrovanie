@@ -10,19 +10,21 @@ colors = ['crimson', 'coral', 'peachpuff', 'gold', 'orange', 'limegreen', 'darkg
           'lightgrey', 'slategray', 'royalblue', 'lightcyan', 'purple', 'darkgoldenrod', 'mintcream'
           ]
 
-
-# vypocita vzdialenost medzi jednym bodom a centroidom
+# vypocita euklidovsku vzdialenost medzi dvomi bodmi
 @jit(nopython=True)
 def vzdialenost(p1, p2):
     d = math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
     return d
 
 
+# divizivne klastrovanie rozdeluje klastre postupne na mensie
 def diviz(k, priestor):
+    # zoznam vyslednych keys v klastroch
     k_list = []
     x = 0
     y = 0
     centroids = []
+    # najdem prvy centroid v celom priestore
     for point in priestor:
         x += point[0]
         y += point[1]
@@ -30,24 +32,24 @@ def diviz(k, priestor):
     y /= len(priestor)
     max = -1
     farthest = priestor[0][0]
+    # hladam bod, ktory je najvzdialenejsi od centroidu
     for point in priestor:
         d = vzdialenost(point, (x, y))
         if d > max:
             max = d
             farthest = point
-
+    # na zaklade tychto dvoch bodov rozdelim priestor na dva prve klastre
     centroids.append((x,y))
     centroids.append((farthest))
     klastre = vytvor_klastre(priestor, centroids)
     k_list.append(0)
     k_list.append(1)
     index_m = 2
+    # pre vsetky ostatne klastre opakujem: v kazdej iteracii mi vzniknu dva nove klastre
     while len(klastre) < k:
-        print(k)
-        print(len(klastre))
-        # find cluster with the largest diameter - maximum distance between two points
+        # hladam klaster s najvacsim priemerom - taky, kde maju dva body od seba co najvacsiu vzdialenosti
         max_diam = 0
-        #max_klaster = klastre[0][0]
+        max_klaster = 0
         for klaster in klastre:
             for i in range(0, len(klastre[klaster])):
                 for j in range(i+1, len(klastre[klaster])):
@@ -55,12 +57,15 @@ def diviz(k, priestor):
                     if d > max_diam:
                         max_diam = d
                         max_klaster = klaster
+        # tento klaster, ktory mal najvacsi priemer, rozdelim
+        # hladam centroid tohto klastra
         for i in range(0, len(klastre[max_klaster])):
             x += klastre[max_klaster][i][0]
             y += klastre[max_klaster][i][1]
         x /= len(klastre[max_klaster])
         y /= len(klastre[max_klaster])
         max = -1
+        # hladam bod, ktory je najvzdialenejsi od centroidu
         for point in range(0, len(klastre[max_klaster])):
             d = vzdialenost(klastre[max_klaster][point], (x, y))
             if d > max:
@@ -68,8 +73,8 @@ def diviz(k, priestor):
                 farthest = klastre[max_klaster][point]
         centroids.append((x, y))
         centroids.append((farthest))
-        #centroids = [(x, y), (farthest)]
-        #print(klastre[max_klaster])
+        # body v klastri prerozdelim na zaklade dvoch novych centroidov
+        # vzniknu dva nove klastre
         for point in klastre[max_klaster]:
             distance = {}
             index_c = index_m
@@ -80,11 +85,12 @@ def diviz(k, priestor):
             klastre[vysledny].append(point)
             if vysledny not in k_list:
                 k_list.append(vysledny)
-
+        # stary klaster vymazem
         klastre.pop(max_klaster)
+        # updatnem zoznam keys
         k_list.remove(max_klaster)
+        # pocet centroidov
         index_m += 2
-    print(klastre)
 
     for k, j in zip(range(0, k), k_list):
         for item in range(0, len(klastre[j])):
@@ -92,7 +98,6 @@ def diviz(k, priestor):
                      markeredgewidth=1)
     #for i in centroids:
         #ax4.plot(i[0], i[1], 'ro')
-
 
 
 # najde najblizsi centroid k danemu bodu
@@ -104,11 +109,9 @@ def najdi_min(distance):
 
 def kmeans_centroid(k, priestor):
     # 20 pociatocnych nahodnych centroidov
-    # hocijaký bod v intervale od -5000 +5000 !
-    # pricom ked robime s medoidom, tak je stred jeden z danych bodov
     centroids = []
-    x = random.sample(range(-5000, 5000), k=k)
-    y = random.sample(range(-5000, 5000), k=k)
+    x = random.sample(range(-1000, 1000), k=k)
+    y = random.sample(range(-1000, 1000), k=k)
     for i, j in zip(x, y):
         centroids.append((i, j))
     # centroids = random.sample(priestor, k=k)
@@ -151,10 +154,11 @@ def kmeans_centroid(k, priestor):
         for item in range(0, len(klastre[k])):
             ax1.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=5,
                      markeredgewidth=1)
-    for i in centroids:
-        ax1.plot(i[0], i[1], 'ro')
+    #for i in centroids:
+        #ax1.plot(i[0], i[1], 'ro')
 
 
+# cena v ramci klastra
 def cena(medoids, m, klastre):
     cena = 0
     for bod in klastre[m]:
@@ -186,6 +190,7 @@ def kmeans_medoid(k, priestor):
                         cena_klastra = cena_nova
                         # zapamataj si novy medoid
                         naj_med = nove_medoidy
+        # ak nenastala ziadna zmena, skoncime
         if medoids == naj_med:
             break
         else:
@@ -196,10 +201,11 @@ def kmeans_medoid(k, priestor):
         for item in range(0, len(nove_klastre[k])):
             ax2.plot(nove_klastre[k][item][0], nove_klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black', markersize=6,
                      markeredgewidth=1)
-    for i in medoids:
-        ax2.plot(i[0], i[1], 'ro')
+    #for i in medoids:
+        #ax2.plot(i[0], i[1], 'ro')
 
 
+# priradi body k najblizsiemu centroidu/medoidu
 def vytvor_klastre(priestor, medoids):
     klastre = defaultdict(list)
     for point in priestor:
@@ -213,6 +219,8 @@ def vytvor_klastre(priestor, medoids):
     return klastre
 
 
+# funkcia pre aglomerativne zhlukovanie,  vypocita vzdialenost medzi 2 klastrami
+# ak je dlzka klastra viac ako jedna, vypocita centroid tohto klastra a od centroidu pocita vzdialenost
 def vzdialenost_centroid(klasterA, klasterB):
     if len(klasterA) == 1:
         centroidA = klasterA
@@ -242,6 +250,7 @@ def vzdialenost_centroid(klasterA, klasterB):
     return d
 
 
+# do heapu vlozi vzdialenosti medzi jednotlivymi bodmi / klastrami
 def compute_distance(i, klaster_list, heap):
     j = i + 1
     klasterA = klaster_list[i]
@@ -253,23 +262,28 @@ def compute_distance(i, klaster_list, heap):
     return heap
 
 
+# inicializuje heap
 def setup(heap, klaster_list):
     for i in range(0, len(priestor)):
         heap = compute_distance(i, klaster_list, heap)
     return heap
 
 
+# aglomerativne zhlukovanie hlada klastre, ktore su najblizsie
+# tieto klastre naslednej zluci dokopy
 def aglomer(k, priestor):
     heap = []
     klaster_list = []
     for i in range(0, len(priestor)):
         klaster_list.append([priestor[i]])
     heap = setup(heap, klaster_list)
+    # kym nemame pozadovany pocet klastrov
     while len(klaster_list) > k:
         min_dist_klaster = heapq.heappop(heap)
         min_dist = min_dist_klaster[0]
         klasterA = min_dist_klaster[1][0]
         klasterB = min_dist_klaster[1][1]
+        # ak tieto klastre existuju, v klaster liste, mozeme ich zlucit
         if klasterA in klaster_list and klasterB in klaster_list:
             klaster_list.remove(klasterA)
             klaster_list.remove(klasterB)
@@ -287,11 +301,11 @@ def aglomer(k, priestor):
 
 
 if __name__ == '__main__':
-    random.seed(a=None, version=2)
+    #random.seed(a=None, version=2)
     priestor = []
     # Return a k length list of unique elements chosen from the population sequence or set. Used for random sampling without replacement.
-    x = random.sample(range(-5000, 5000), k=20)
-    y = random.sample(range(-5000, 5000), k=20)
+    x = random.sample(range(-2000, 2000), k=20)
+    y = random.sample(range(-2000, 2000), k=20)
     for i, j in zip(x, y):
         priestor.append((i, j))
 
@@ -305,10 +319,10 @@ if __name__ == '__main__':
     ax4 = fig.add_subplot(224)
     ax4.title.set_text('Divizivne zhklukovanie')
 
-    for i in range(0, 100):
+    for i in range(0, 6000):
         random_bod = random.randint(0, len(priestor) - 1)
-        x_offset = random.randint(-100, 100)
-        y_offset = random.randint(-100, 100)
+        x_offset = random.randint(-80, 80)
+        y_offset = random.randint(-80, 80)
         nove_x = priestor[random_bod][0] + x_offset
         nove_y = priestor[random_bod][1] + y_offset
         priestor.append((nove_x, nove_y))
