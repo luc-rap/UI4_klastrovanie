@@ -5,6 +5,7 @@ from collections import defaultdict
 import threading
 import heapq
 from numba import jit
+from numpy.random import choice
 
 colors = ['crimson', 'coral', 'peachpuff', 'gold', 'orange', 'limegreen', 'darkgreen', 'deepskyblue', 'teal', 'navy',
           'darkorchid', 'lightpink', 'deeppink',
@@ -50,7 +51,7 @@ def diviz(k, priestor):
     # pre vsetky ostatne klastre opakujem: v kazdej iteracii mi vzniknu dva nove klastre
     while len(klastre) < k:
         # hladam klaster s najvacsim priemerom - taky, kde maju dva body od seba co najvacsiu vzdialenosti
-        max_diam = 0
+        max_diam = -1
         max_klaster = 0
         for klaster in klastre:
             for i in range(0, len(klastre[klaster])):
@@ -74,7 +75,7 @@ def diviz(k, priestor):
                 max = d
                 farthest = klastre[max_klaster][point]
         centroids.append((x, y))
-        centroids.append((farthest))
+        centroids.append(farthest)
         # body v klastri prerozdelim na zaklade dvoch novych centroidov
         # vzniknu dva nove klastre
         for point in klastre[max_klaster]:
@@ -110,15 +111,35 @@ def najdi_min(distance):
     return mini
 
 
+def inicializuj_centroidy(k, priestor):
+    best_centroids = []
+    max_dist = -1
+    for i in range(0, 5000):
+        centroids = []
+        x = random.sample(range(-5000, 5000), k=k)
+        y = random.sample(range(-5000, 5000), k=k)
+        for i, j in zip(x, y):
+            centroids.append((i, j))
+        d = 0
+        for i in range(0, len(centroids)):
+            for j in range(i + 1, len(centroids)):
+                d += vzdialenost(centroids[i], centroids[j])
+        if d > max_dist:
+            max_dist = d
+            best_centroids = centroids
+    return best_centroids
+
+
 def kmeans_centroid(k, priestor):
     # 20 pociatocnych nahodnych centroidov
-    centroids = []
-    x = random.sample(range(-1000, 1000), k=k)
-    y = random.sample(range(-1000, 1000), k=k)
-    for i, j in zip(x, y):
-        centroids.append((i, j))
+    #centroids = []
+    #x = random.sample(range(-5000, 5000), k=k)
+    #y = random.sample(range(-5000, 5000), k=k)
+    #for i, j in zip(x, y):
+        #centroids.append((i, j))
     # centroids = random.sample(priestor, k=k)
     vzdialenosti = []
+    centroids = inicializuj_centroidy(k, priestor)
 
     # Krok 1: Priradenie inštancií do klastrov – pre každú inštanciu sa nájde najbližšie
     # centrum a do klastra prislúchajúceho tomuto centru sa inštancia priradí.
@@ -170,11 +191,30 @@ def cena(medoids, m, klastre):
     return cena
 
 
+def inicializuj_medoidy(priestor, k):
+    best_medoids = []
+    max_dist = -1
+
+    for i in range(0, 5000):
+        medoids = random.sample(priestor, k=k)
+        d = 0
+        for i in range(0, len(medoids)):
+            for j in range(i + 1, len(medoids)):
+                d += vzdialenost(medoids[i], medoids[j])
+        if d > max_dist:
+            max_dist = d
+            best_medoids = medoids
+    return best_medoids
+
+
 # Update step: For each medoid m and each data point o associated to m swap m and o and compute the total cost of the configuration
 # (that is, the average dissimilarity of o to all the data points associated to m). Select the medoid o with the lowest cost of the configuration.
 def kmeans_medoid(k, priestor):
     # pociatocne medoidy
-    medoids = random.sample(priestor, k=k)
+    #medoids = random.sample(priestor, k=k)
+    #medoidss = random.choices(priestor, k=1000)
+    #medoids = random.sample(medoidss, k=k)
+    medoids = inicializuj_medoidy(priestor, k)
     while True:
         klastre = vytvor_klastre(priestor, medoids)
         naj_med = medoids
@@ -206,8 +246,6 @@ def kmeans_medoid(k, priestor):
             ax2.plot(nove_klastre[k][item][0], nove_klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black',
                      markersize=6,
                      markeredgewidth=1)
-    # for i in medoids:
-    # ax2.plot(i[0], i[1], 'ro')
 
 
 # priradi body k najblizsiemu centroidu/medoidu
@@ -257,11 +295,14 @@ def vzdialenost_centroid(klasterA, klasterB):
 
 # do heapu vlozi vzdialenosti medzi jednotlivymi bodmi / klastrami
 def compute_distance(i, klaster_list, heap):
+    int_dist = []
     j = i + 1
     klasterA = klaster_list[i]
     for k in range(j, len(klaster_list)):
         klasterB = klaster_list[k]
         distance = vzdialenost_centroid(klasterA, klasterB)
+        #if int(distance) not in int_dist:
+            #int_dist.append(int(distance))
         heap_item = [distance, [klasterA, klasterB]]
         heapq.heappush(heap, heap_item)
     return heap
@@ -307,11 +348,10 @@ def aglomer(k, priestor):
 
 
 if __name__ == '__main__':
-    # random.seed(a=None, version=2)
     priestor = []
     # Return a k length list of unique elements chosen from the population sequence or set. Used for random sampling without replacement.
-    x = random.sample(range(-2000, 2000), k=20)
-    y = random.sample(range(-2000, 2000), k=20)
+    x = random.sample(range(-5000, 5000), k=20)
+    y = random.sample(range(-5000, 5000), k=20)
     for i, j in zip(x, y):
         priestor.append((i, j))
 
@@ -325,15 +365,16 @@ if __name__ == '__main__':
     ax4 = fig.add_subplot(224)
     ax4.title.set_text('Divizivne zhklukovanie')
 
-    for i in range(0, 6000):
+    for i in range(0, 5000):
         random_bod = random.randint(0, len(priestor) - 1)
-        x_offset = random.randint(-80, 80)
-        y_offset = random.randint(-80, 80)
+        x_offset = random.randint(-100, 100)
+        y_offset = random.randint(-100, 100)
         nove_x = priestor[random_bod][0] + x_offset
         nove_y = priestor[random_bod][1] + y_offset
         priestor.append((nove_x, nove_y))
 
     k = 15
+
     thread1 = threading.Thread(target=kmeans_centroid, args=(k, priestor))
     thread1.start()
     thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
