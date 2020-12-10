@@ -5,7 +5,7 @@ from collections import defaultdict
 import threading
 import heapq
 from numba import jit
-from numpy.random import choice
+import time
 
 colors = ['crimson', 'coral', 'peachpuff', 'gold', 'orange', 'limegreen', 'darkgreen', 'deepskyblue', 'teal', 'navy',
           'darkorchid', 'lightpink', 'deeppink',
@@ -22,6 +22,7 @@ def vzdialenost(p1, p2):
 
 # divizivne klastrovanie rozdeluje klastre postupne na mensie
 def diviz(k, priestor):
+    start = time.time()
     # zoznam vyslednych keys v klastroch
     k_list = []
     x = 0
@@ -47,6 +48,7 @@ def diviz(k, priestor):
     klastre = vytvor_klastre(priestor, centroids)
     k_list.append(0)
     k_list.append(1)
+
     index_m = 2
     # pre vsetky ostatne klastre opakujem: v kazdej iteracii mi vzniknu dva nove klastre
     while len(klastre) < k:
@@ -95,13 +97,39 @@ def diviz(k, priestor):
         # pocet centroidov
         index_m += 2
 
+    stop = time.time()
+    print("Divizivne: ", (stop - start), "s")
     for k, j in zip(range(0, k), k_list):
         for item in range(0, len(klastre[j])):
-            ax4.plot(klastre[j][item][0], klastre[j][item][1], 'o', color=colors[k], markeredgecolor='black',
+            ax4.plot(klastre[j][item][0], klastre[j][item][1], 'o', color=colors[k], markeredgecolor='grey',
                      markersize=5,
                      markeredgewidth=1)
-    # for i in centroids:
-    # ax4.plot(i[0], i[1], 'ro')
+
+    centra = []
+    for i in k_list:
+        x = 0
+        y = 0
+        for j in range(0, len(klastre[i])):
+            x += klastre[i][j][0]
+            y += klastre[i][j][1]
+        x /= len(klastre[i])
+        y /= len(klastre[i])
+        centra.append((x, y))
+
+    a = 0
+    for i in centra:
+        ax4.plot(i[0], i[1], 'ro')
+        ax4.annotate(a, (i[0], i[1]))
+        a += 1
+    j = 0
+    for c in k_list:
+        d = 0
+        for i in range(0, len(klastre[c])):
+            d += vzdialenost(klastre[c][i], centra[j])
+        j += 1
+
+        print("Priemerna vzdialenost bodov v klastri od stredu: ", d/len(klastre[c]))
+        print("**********")
 
 
 # najde najblizsi centroid k danemu bodu
@@ -131,22 +159,28 @@ def inicializuj_centroidy(k, priestor):
 
 
 def kmeans_centroid(k, priestor):
-    # 20 pociatocnych nahodnych centroidov
+    start = time.time()
+
+    # 20 pociatocnych nahodnych centroidov v intervale -5000, 5000
     #centroids = []
     #x = random.sample(range(-5000, 5000), k=k)
     #y = random.sample(range(-5000, 5000), k=k)
     #for i, j in zip(x, y):
         #centroids.append((i, j))
-    # centroids = random.sample(priestor, k=k)
-    vzdialenosti = []
+
+    # centroidy vybrane ako body z priestoru
+    #centroids = random.sample(priestor, k=k)
+
+    # inicializacia pomocou optimalizacie
     centroids = inicializuj_centroidy(k, priestor)
 
-    # Krok 1: Priradenie inštancií do klastrov – pre každú inštanciu sa nájde najbližšie
+    # 1: Priradenie inštancií do klastrov – pre každú inštanciu sa nájde najbližšie
     # centrum a do klastra prislúchajúceho tomuto centru sa inštancia priradí.
 
-    # Krok 2: Úprava centier – nové centrá sa vypočítajú ako priemery inštancií
+    # 2: Úprava centier – nové centrá sa vypočítajú ako priemery inštancií
     # patriacich príslušnému klastru.
-    for i in range(0, 20):
+
+    for i in range(0, 100):
         klastre = defaultdict(list)
         for point in priestor:
             distance = {}
@@ -174,13 +208,27 @@ def kmeans_centroid(k, priestor):
             y /= len(klastre[i])
             centroids[i] = (x, y)
 
+    stop = time.time()
+    print("Centroidy: ", (stop - start), "s")
+
+    for c in range(0, len(centroids)):
+        d = 0
+        for i in range(0, len(klastre[c])):
+            d += vzdialenost(klastre[c][i], centroids[c])
+        if len(klastre[c]) > 0:
+            print("Priemerna vzdialenost bodov v klastri od stredu: ", d/len(klastre[c]))
+        print("**********")
+
     for k in range(0, k):
         for item in range(0, len(klastre[k])):
-            ax1.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black',
+            ax1.plot(klastre[k][item][0], klastre[k][item][1], 'o', color=colors[k], markeredgecolor='grey',
                      markersize=5,
                      markeredgewidth=1)
-    # for i in centroids:
-    # ax1.plot(i[0], i[1], 'ro')
+    a = 0
+    for i in centroids:
+        ax1.plot(i[0], i[1], 'ro')
+        ax1.annotate(a, (i[0], i[1]))
+        a += 1
 
 
 # cena v ramci klastra
@@ -191,7 +239,7 @@ def cena(medoids, m, klastre):
     return cena
 
 
-def inicializuj_medoidy(priestor, k):
+def inicializuj_medoidy(k, priestor):
     best_medoids = []
     max_dist = -1
 
@@ -210,11 +258,13 @@ def inicializuj_medoidy(priestor, k):
 # Update step: For each medoid m and each data point o associated to m swap m and o and compute the total cost of the configuration
 # (that is, the average dissimilarity of o to all the data points associated to m). Select the medoid o with the lowest cost of the configuration.
 def kmeans_medoid(k, priestor):
+    start = time.time()
     # pociatocne medoidy
     #medoids = random.sample(priestor, k=k)
-    #medoidss = random.choices(priestor, k=1000)
+    #medoids = random.choices(priestor, k=20)
     #medoids = random.sample(medoidss, k=k)
-    medoids = inicializuj_medoidy(priestor, k)
+
+    medoids = inicializuj_medoidy(k, priestor)
     while True:
         klastre = vytvor_klastre(priestor, medoids)
         naj_med = medoids
@@ -241,11 +291,25 @@ def kmeans_medoid(k, priestor):
             medoids = naj_med
 
     nove_klastre = vytvor_klastre(priestor, medoids)
+    stop = time.time()
+    print("Medoidy: ", (stop - start), "s")
+    for c in range(0, len(medoids)):
+        d = 0
+        for i in range(0, len(klastre[c])):
+            d += vzdialenost(klastre[c][i], medoids[c])
+        if len(klastre[c]) > 0:
+            print("Priemerna vzdialenost bodov v klastri od medoidu: ", d/len(klastre[c]))
+        print("**********")
     for k in range(0, k):
         for item in range(0, len(nove_klastre[k])):
-            ax2.plot(nove_klastre[k][item][0], nove_klastre[k][item][1], 'o', color=colors[k], markeredgecolor='black',
-                     markersize=6,
+            ax2.plot(nove_klastre[k][item][0], nove_klastre[k][item][1], 'o', color=colors[k], markeredgecolor='grey',
+                     markersize=5,
                      markeredgewidth=1)
+    a = 0
+    for i in medoids:
+        ax2.plot(i[0], i[1], 'ro')
+        ax2.annotate(a, (i[0], i[1]))
+        a += 1
 
 
 # priradi body k najblizsiemu centroidu/medoidu
@@ -301,10 +365,10 @@ def compute_distance(i, klaster_list, heap):
     for k in range(j, len(klaster_list)):
         klasterB = klaster_list[k]
         distance = vzdialenost_centroid(klasterA, klasterB)
-        #if int(distance) not in int_dist:
-            #int_dist.append(int(distance))
-        heap_item = [distance, [klasterA, klasterB]]
-        heapq.heappush(heap, heap_item)
+        if int(distance) not in int_dist:
+            int_dist.append(int(distance))
+            heap_item = [distance, [klasterA, klasterB]]
+            heapq.heappush(heap, heap_item)
     return heap
 
 
@@ -318,6 +382,7 @@ def setup(heap, klaster_list):
 # aglomerativne zhlukovanie hlada klastre, ktore su najblizsie, pouziva centroid/average link
 # tieto klastre naslednej zluci dokopy
 def aglomer(k, priestor):
+    start = time.time()
     heap = []
     klaster_list = []
     for i in range(0, len(priestor)):
@@ -337,11 +402,37 @@ def aglomer(k, priestor):
             klaster_list.insert(0, klaster)
             heap = compute_distance(0, klaster_list, heap)
 
+    stop = time.time()
+    print("Aglomerativne: ", (stop - start), "s")
+    centra = []
+    for i in range(0, len(klaster_list)):
+        x = 0
+        y = 0
+        for j in range(0, len(klaster_list[i])):
+            x += klaster_list[i][j][0]
+            y += klaster_list[i][j][1]
+        x /= len(klaster_list[i])
+        y /= len(klaster_list[i])
+        centra.append((x, y))
+
     for k in range(0, len(klaster_list)):
         for item in range(0, len(klaster_list[k])):
-            ax3.plot(klaster_list[k][item][0], klaster_list[k][item][1], 'o', color=colors[k], markeredgecolor='black',
-                     markersize=6,
+            ax3.plot(klaster_list[k][item][0], klaster_list[k][item][1], 'o', color=colors[k], markeredgecolor='grey',
+                     markersize=5,
                      markeredgewidth=1)
+    a = 0
+    for i in centra:
+        ax3.plot(i[0], i[1], 'ro')
+        ax3.annotate(a, (i[0], i[1]))
+        a += 1
+
+    for c in range(0, len(centra)):
+        d = 0
+        for i in range(0, len(klaster_list[c])):
+            d += vzdialenost(klaster_list[c][i], centra[c])
+
+        print("Priemerna vzdialenost bodov v klastri od stredu: ", d/len(klaster_list[c]))
+        print("**********")
 
     # distance between clusters
     # merge clusters with minimal distance
@@ -365,7 +456,7 @@ if __name__ == '__main__':
     ax4 = fig.add_subplot(224)
     ax4.title.set_text('Divizivne zhklukovanie')
 
-    for i in range(0, 5000):
+    for i in range(0, 20000):
         random_bod = random.randint(0, len(priestor) - 1)
         x_offset = random.randint(-100, 100)
         y_offset = random.randint(-100, 100)
@@ -373,19 +464,19 @@ if __name__ == '__main__':
         nove_y = priestor[random_bod][1] + y_offset
         priestor.append((nove_x, nove_y))
 
-    k = 15
+    k = 20
 
-    thread1 = threading.Thread(target=kmeans_centroid, args=(k, priestor))
-    thread1.start()
-    thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
-    thread2.start()
-    thread3 = threading.Thread(target=aglomer, args=(k, priestor))
-    thread3.start()
+    #thread1 = threading.Thread(target=kmeans_centroid, args=(k, priestor))
+    #thread1.start()
+    #thread2 = threading.Thread(target=kmeans_medoid, args=(k, priestor))
+    #thread2.start()
+    #thread3 = threading.Thread(target=aglomer, args=(k, priestor))
+    #thread3.start()
     thread4 = threading.Thread(target=diviz, args=(k, priestor))
     thread4.start()
-    thread1.join()
-    thread2.join()
-    thread3.join()
+    #thread1.join()
+    #thread2.join()
+    #thread3.join()
     thread4.join()
 
     plt.show()
